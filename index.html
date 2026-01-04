@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – Physical Indent</title>
+<title>Liquid Button – Localized Touch</title>
 
 <style>
   html, body {
@@ -41,10 +41,6 @@
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
-
-    transition:
-      box-shadow 0.6s cubic-bezier(.18,.9,.22,1),
-      transform 0.6s cubic-bezier(.18,.9,.22,1);
   }
 
   .liquid-btn span {
@@ -57,39 +53,34 @@
     pointer-events: none;
   }
 
-  /* SHADOW WELL (indent, not light) */
+  /* LOCAL CONTACT PATCH */
   .liquid-btn::before {
     content: "";
     position: absolute;
-    inset: -25%;
+    inset: -30%;
     border-radius: inherit;
+    pointer-events: none;
+
     background:
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
+        /* soft shadow well */
         rgba(0,0,0,0.45) 0%,
-        rgba(0,0,0,0.28) 22%,
-        rgba(0,0,0,0.14) 40%,
-        rgba(0,0,0,0.06) 55%,
+        rgba(0,0,0,0.25) 22%,
+        rgba(0,0,0,0.12) 38%,
+        /* rim light */
+        rgba(255,255,255,0.18) 46%,
+        rgba(255,255,255,0.08) 55%,
         transparent 70%
       );
+
     opacity: 0;
-    transform: scale(1);
     transition:
-      opacity 0.25s ease,
-      transform 0.7s cubic-bezier(.18,.9,.22,1);
+      opacity 0.25s ease;
   }
 
-  .liquid-btn.active {
-    transform: scale(0.985);
-    box-shadow:
-      inset 0 46px 82px rgba(0,0,0,0.5),
-      inset 0 -14px 26px rgba(255,255,255,0.18),
-      0 26px 56px rgba(0,0,0,0.7);
-  }
-
-  .liquid-btn.active::before {
+  .liquid-btn.touching::before {
     opacity: 1;
-    transform: scale(0.92);
   }
 </style>
 </head>
@@ -115,17 +106,17 @@
   btn.addEventListener("pointerdown", e => {
     btn.setPointerCapture(e.pointerId);
     updatePosition(e);
-    btn.classList.add("active");
+    btn.classList.add("touching");
   });
 
   btn.addEventListener("pointermove", e => {
-    if (btn.classList.contains("active")) {
+    if (btn.classList.contains("touching")) {
       updatePosition(e);
     }
   });
 
   function release(e) {
-    btn.classList.remove("active");
+    btn.classList.remove("touching");
     try { btn.releasePointerCapture(e.pointerId); } catch {}
   }
 
