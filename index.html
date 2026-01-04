@@ -2,18 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Press Button</title>
+<title>Liquid Indent Button</title>
 
 <style>
   html, body {
     margin: 0;
-    padding: 0;
     height: 100%;
     background: #0e0e11;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    font-family: system-ui;
+  }
+
+  button {
+    appearance: none;
+    border: none;
   }
 
   .liquid-btn {
@@ -21,14 +25,15 @@
     width: 220px;
     height: 80px;
     border-radius: 40px;
-    border: none;
-    cursor: pointer;
-    overflow: hidden;
-    background: rgba(180, 210, 255, 0.25);
+    background: rgba(180, 210, 255, 0.28);
     backdrop-filter: blur(14px);
     box-shadow:
-      inset 0 0 20px rgba(255,255,255,0.35),
-      0 10px 30px rgba(0,0,0,0.4);
+      inset 0 8px 18px rgba(255,255,255,0.35),
+      inset 0 -6px 12px rgba(0,0,0,0.25),
+      0 14px 30px rgba(0,0,0,0.45);
+    cursor: pointer;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease;
   }
 
   .liquid-btn span {
@@ -36,75 +41,69 @@
     z-index: 2;
     color: white;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    font-size: 15px;
+    letter-spacing: 0.12em;
+    font-size: 14px;
     pointer-events: none;
   }
 
-  .ripple {
+  /* Liquid surface */
+  .liquid-btn::before {
+    content: "";
     position: absolute;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(255,255,255,0.9),
-      rgba(255,255,255,0.4),
-      transparent 70%
-    );
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0.9;
-    pointer-events: none;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(
+        circle at var(--x, 50%) var(--y, 50%),
+        rgba(255,255,255,0.9),
+        rgba(255,255,255,0.35) 35%,
+        rgba(255,255,255,0.15) 55%,
+        transparent 70%
+      );
+    opacity: 0;
+    transition:
+      opacity 0.15s ease,
+      transform 0.25s cubic-bezier(.2,.8,.3,1);
   }
 
-  .liquid-btn.active .ripple {
-    animation: ripple-expand 0.6s ease-out forwards;
+  .liquid-btn.pressed::before {
+    opacity: 1;
+    transform: scale(0.94);
   }
 
-  @keyframes ripple-expand {
-    0% {
-      transform: translate(-50%, -50%) scale(0);
-      opacity: 0.9;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(18);
-      opacity: 0;
-    }
+  .liquid-btn.pressed {
+    box-shadow:
+      inset 0 14px 28px rgba(0,0,0,0.35),
+      inset 0 -2px 6px rgba(255,255,255,0.25),
+      0 6px 18px rgba(0,0,0,0.6);
   }
 </style>
 </head>
 
 <body>
 
-<button class="liquid-btn" id="liquidBtn">
+<button type="button" class="liquid-btn" id="btn">
   <span>CLICK ME</span>
-  <div class="ripple"></div>
 </button>
 
 <script>
-  const btn = document.getElementById("liquidBtn");
-  const ripple = btn.querySelector(".ripple");
+  const btn = document.getElementById("btn");
 
-  btn.addEventListener("mousedown", e => {
+  btn.addEventListener("pointerdown", e => {
     const rect = btn.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-    ripple.style.left = x + "px";
-    ripple.style.top = y + "px";
+    btn.style.setProperty("--x", x + "%");
+    btn.style.setProperty("--y", y + "%");
 
-    btn.classList.remove("active");
-    void btn.offsetWidth; // reset animation
-    btn.classList.add("active");
+    btn.classList.add("pressed");
   });
 
-  btn.addEventListener("mouseup", () => {
-    btn.classList.remove("active");
-  });
+  const release = () => btn.classList.remove("pressed");
 
-  btn.addEventListener("mouseleave", () => {
-    btn.classList.remove("active");
-  });
+  btn.addEventListener("pointerup", release);
+  btn.addEventListener("pointerleave", release);
 </script>
 
 </body>
