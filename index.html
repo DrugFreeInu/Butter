@@ -54,7 +54,7 @@
     pointer-events: none;
   }
 
-  /* 🌑 MOON CRATER SURFACE */
+  /* 🌑 MOON CRATER SURFACE (SMALLER CONTACT PATCH) */
   .liquid-btn::before {
     content: "";
     position: absolute;
@@ -63,22 +63,22 @@
     pointer-events: none;
 
     background:
-      /* CRATER RIM (raised, light-catching edge) */
+      /* CRATER RIM (smaller, tighter ring) */
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
-        transparent 28%,
-        rgba(255,255,255,0.38) 32%,
-        rgba(255,255,255,0.18) 38%,
-        transparent 45%
+        transparent 18%,
+        rgba(255,255,255,0.4) 21%,
+        rgba(255,255,255,0.2) 25%,
+        transparent 30%
       ),
 
-      /* CRATER WELL (impact shadow) */
+      /* CRATER WELL (compact shadow core) */
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
-        rgba(0,0,0,0.6) 0%,
-        rgba(0,0,0,0.4) 20%,
-        rgba(0,0,0,0.2) 34%,
-        transparent 52%
+        rgba(0,0,0,0.65) 0%,
+        rgba(0,0,0,0.45) 12%,
+        rgba(0,0,0,0.25) 22%,
+        transparent 36%
       );
 
     opacity: 0;
