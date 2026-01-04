@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – Soft Indent Striations</title>
+<title>Liquid Button – Soft Indent (Shadow Striations)</title>
 
 <style>
   html, body {
@@ -53,7 +53,7 @@
     pointer-events: none;
   }
 
-  /* 🌑 CONTACT DEFORMATION + STRIATIONS */
+  /* 🌑 CONTACT DEFORMATION WITH SHADOW STRIATIONS */
   .liquid-btn::before {
     content: "";
     position: absolute;
@@ -62,21 +62,21 @@
     pointer-events: none;
 
     background:
-      /* STRIATION LINES (compression toward center) */
+      /* SHADOW STRIATIONS (compression lines, NOT light) */
       repeating-conic-gradient(
         from 0deg at var(--x, 50%) var(--y, 50%),
-        rgba(255,255,255,0.06) 0deg,
-        rgba(255,255,255,0.06) 4deg,
+        rgba(0,0,0,0.12) 0deg,
+        rgba(0,0,0,0.12) 4deg,
         transparent 6deg,
-        transparent 12deg
+        transparent 14deg
       ),
 
       /* CRATER RIM */
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
         transparent 18%,
-        rgba(255,255,255,0.4) 21%,
-        rgba(255,255,255,0.2) 25%,
+        rgba(255,255,255,0.35) 21%,
+        rgba(255,255,255,0.18) 25%,
         transparent 30%
       ),
 
@@ -89,13 +89,13 @@
         transparent 36%
       );
 
-    /* mask striations so they fade outward */
+    /* mask so striations fade outward */
     mask-image:
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
         black 0%,
-        black 28%,
-        transparent 55%
+        black 26%,
+        transparent 52%
       );
 
     opacity: 0;
@@ -105,13 +105,22 @@
       transform 0.6s cubic-bezier(.18,.9,.22,1);
   }
 
-  /* TOUCH = compress + show texture */
+  /* TOUCH = compress */
   .liquid-btn.touching::before {
     opacity: 1;
     transform: scale(0.8);
     transition:
       opacity 0.12s ease,
       transform 0.18s cubic-bezier(.3,0,.2,1);
+  }
+
+  /* RELEASE = elastic recovery */
+  .liquid-btn.settling::before {
+    opacity: 0.6;
+    transform: scale(0.92);
+    transition:
+      opacity 0.3s ease-out,
+      transform 0.35s cubic-bezier(.18,.9,.22,1);
   }
 </style>
 </head>
@@ -147,6 +156,12 @@
 
   function release(e) {
     btn.classList.remove("touching");
+    btn.classList.add("settling");
+
+    setTimeout(() => {
+      btn.classList.remove("settling");
+    }, 160);
+
     try { btn.releasePointerCapture(e.pointerId); } catch {}
   }
 
