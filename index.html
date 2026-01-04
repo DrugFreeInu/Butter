@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – Localized Touch</title>
+<title>Liquid Button – Moon Crater Touch</title>
 
 <style>
   html, body {
@@ -37,6 +37,7 @@
     cursor: pointer;
     overflow: hidden;
 
+    /* iOS / touch safety */
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -53,30 +54,35 @@
     pointer-events: none;
   }
 
-  /* LOCAL CONTACT PATCH */
+  /* 🌑 MOON CRATER SURFACE */
   .liquid-btn::before {
     content: "";
     position: absolute;
-    inset: -30%;
+    inset: -35%;
     border-radius: inherit;
     pointer-events: none;
 
     background:
+      /* CRATER RIM (raised, light-catching edge) */
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
-        /* soft shadow well */
-        rgba(0,0,0,0.45) 0%,
-        rgba(0,0,0,0.25) 22%,
-        rgba(0,0,0,0.12) 38%,
-        /* rim light */
-        rgba(255,255,255,0.18) 46%,
-        rgba(255,255,255,0.08) 55%,
-        transparent 70%
+        transparent 28%,
+        rgba(255,255,255,0.38) 32%,
+        rgba(255,255,255,0.18) 38%,
+        transparent 45%
+      ),
+
+      /* CRATER WELL (impact shadow) */
+      radial-gradient(
+        circle at var(--x, 50%) var(--y, 50%),
+        rgba(0,0,0,0.6) 0%,
+        rgba(0,0,0,0.4) 20%,
+        rgba(0,0,0,0.2) 34%,
+        transparent 52%
       );
 
     opacity: 0;
-    transition:
-      opacity 0.25s ease;
+    transition: opacity 0.25s ease;
   }
 
   .liquid-btn.touching::before {
