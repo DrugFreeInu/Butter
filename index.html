@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – Jelly Sink</title>
+<title>Jelly Push Button (Canvas)</title>
 
 <style>
   html, body {
@@ -12,67 +12,37 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: system-ui;
   }
 
-  button {
-    appearance: none;
-    border: none;
-    background: none;
-    padding: 0;
-  }
-
-  .liquid-btn {
+  .btn {
     position: relative;
     width: 840px;
     height: 320px;
     border-radius: 160px;
     overflow: hidden;
+    background: rgba(170,200,240,0.22);
+    box-shadow:
+      inset 0 24px 50px rgba(255,255,255,0.25),
+      inset 0 -20px 40px rgba(0,0,0,0.35),
+      0 40px 80px rgba(0,0,0,0.6);
     cursor: pointer;
-    touch-action: none;
-
-    --x: 50%;
-    --y: 50%;
-    --press: 0;
   }
 
-  /* =========================
-     JELLY SURFACE (REAL WARP)
-     ========================= */
-  .surface {
+  canvas {
     position: absolute;
     inset: 0;
-    border-radius: inherit;
-
-    background: rgba(170, 200, 240, 0.24);
-    backdrop-filter: blur(18px);
-
-    box-shadow:
-      inset 0 26px 56px rgba(255,255,255,0.28),
-      inset 0 -22px 46px rgba(0,0,0,0.38),
-      0 38px 80px rgba(0,0,0,0.65);
-
-    /* REAL deformation */
-    filter: url(#jelly);
-
-    /* LOCALIZE deformation */
-    mask-image: radial-gradient(
-      circle at var(--x) var(--y),
-      black 0%,
-      black 22%,
-      transparent 55%
-    );
-
-    transition: mask-image 0.15s ease;
   }
 
-  .liquid-btn span {
-    position: relative;
-    z-index: 5;
+  .label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: white;
-    font-weight: 600;
-    letter-spacing: 0.16em;
     font-size: 44px;
+    letter-spacing: 0.16em;
+    font-family: system-ui;
     pointer-events: none;
   }
 </style>
@@ -80,59 +50,97 @@
 
 <body>
 
-<!-- SVG FILTER (REAL JELLY PHYSICS) -->
-<svg width="0" height="0">
-  <filter id="jelly">
-    <feTurbulence
-      type="turbulence"
-      baseFrequency="0.015"
-      numOctaves="2"
-      seed="2"
-      result="noise"
-    />
-    <feDisplacementMap
-      in="SourceGraphic"
-      in2="noise"
-      scale="var(--press)"
-      xChannelSelector="R"
-      yChannelSelector="G"
-    />
-  </filter>
-</svg>
-
-<button class="liquid-btn" id="btn">
-  <div class="surface"></div>
-  <span>CLICK ME</span>
-</button>
+<div class="btn" id="btn">
+  <canvas id="c"></canvas>
+  <div class="label">CLICK ME</div>
+</div>
 
 <script>
-  const btn = document.getElementById("btn");
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const btn = document.getElementById("btn");
 
-  function update(e) {
-    const r = btn.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * 100;
-    const y = ((e.clientY - r.top) / r.height) * 100;
-    btn.style.setProperty("--x", x + "%");
-    btn.style.setProperty("--y", y + "%");
+let w, h;
+function resize() {
+  w = canvas.width = btn.clientWidth;
+  h = canvas.height = btn.clientHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+// height field
+const field = [];
+const res = 120;
+for (let i = 0; i < res * res; i++) field[i] = 0;
+
+let targetX = 0.5;
+let targetY = 0.5;
+let pressing = false;
+
+btn.addEventListener("pointerdown", e => {
+  const r = btn.getBoundingClientRect();
+  targetX = (e.clientX - r.left) / r.width;
+  targetY = (e.clientY - r.top) / r.height;
+  pressing = true;
+});
+
+btn.addEventListener("pointerup", () => pressing = false);
+btn.addEventListener("pointerleave", () => pressing = false);
+
+function step() {
+  // update height field
+  for (let y = 0; y < res; y++) {
+    for (let x = 0; x < res; x++) {
+      const i = y * res + x;
+      const dx = x / res - targetX;
+      const dy = y / res - targetY;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const push = pressing ? Math.exp(-d * 18) * -18 : 0;
+      field[i] += (push - field[i]) * 0.15;
+    }
   }
 
-  btn.addEventListener("pointerdown", e => {
-    btn.setPointerCapture(e.pointerId);
-    update(e);
-    btn.style.setProperty("--press", 38);
-  });
+  // draw
+  ctx.clearRect(0,0,w,h);
+  const img = ctx.createImageData(w, h);
+  const light = {x: -0.4, y: -0.6, z: 1};
 
-  btn.addEventListener("pointermove", e => {
-    update(e);
-  });
+  for (let y = 1; y < h-1; y++) {
+    for (let x = 1; x < w-1; x++) {
+      const fx = Math.floor(x / w * res);
+      const fy = Math.floor(y / h * res);
+      const i = fy * res + fx;
 
-  function release(e) {
-    btn.style.setProperty("--press", 0);
-    try { btn.releasePointerCapture(e.pointerId); } catch {}
+      const hL = field[i - 1] || 0;
+      const hR = field[i + 1] || 0;
+      const hU = field[i - res] || 0;
+      const hD = field[i + res] || 0;
+
+      const nx = hL - hR;
+      const ny = hU - hD;
+      const nz = 1;
+
+      const len = Math.sqrt(nx*nx + ny*ny + nz*nz);
+      const dot =
+        (nx/len)*light.x +
+        (ny/len)*light.y +
+        (nz/len)*light.z;
+
+      const shade = Math.max(0.2, dot);
+      const idx = (y*w + x)*4;
+
+      img.data[idx]   = 255 * shade;
+      img.data[idx+1] = 255 * shade;
+      img.data[idx+2] = 255 * shade;
+      img.data[idx+3] = 35;
+    }
   }
 
-  btn.addEventListener("pointerup", release);
-  btn.addEventListener("pointercancel", release);
+  ctx.putImageData(img,0,0);
+  requestAnimationFrame(step);
+}
+
+step();
 </script>
 
 </body>
