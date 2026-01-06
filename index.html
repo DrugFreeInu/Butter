@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – Local Deformation Only</title>
+<title>Liquid Button – Jelly Sink</title>
 
 <style>
   html, body {
@@ -30,10 +30,14 @@
     overflow: hidden;
     cursor: pointer;
     touch-action: none;
+
+    --x: 50%;
+    --y: 50%;
+    --press: 0;
   }
 
   /* =========================
-     STATIC BASE SURFACE
+     JELLY SURFACE (REAL WARP)
      ========================= */
   .surface {
     position: absolute;
@@ -47,6 +51,19 @@
       inset 0 26px 56px rgba(255,255,255,0.28),
       inset 0 -22px 46px rgba(0,0,0,0.38),
       0 38px 80px rgba(0,0,0,0.65);
+
+    /* REAL deformation */
+    filter: url(#jelly);
+
+    /* LOCALIZE deformation */
+    mask-image: radial-gradient(
+      circle at var(--x) var(--y),
+      black 0%,
+      black 22%,
+      transparent 55%
+    );
+
+    transition: mask-image 0.15s ease;
   }
 
   .liquid-btn span {
@@ -58,134 +75,59 @@
     font-size: 44px;
     pointer-events: none;
   }
-
-  /* =========================
-     LOCAL DENT LAYER
-     ========================= */
-  .dent {
-    position: absolute;
-    inset: -40%;
-    border-radius: inherit;
-    pointer-events: none;
-
-    background:
-      /* rim */
-      radial-gradient(
-        circle at var(--x,50%) var(--y,50%),
-        transparent 20%,
-        rgba(255,255,255,0.16) 22%,
-        rgba(255,255,255,0.08) 24%,
-        transparent 26%
-      ),
-      /* depth */
-      radial-gradient(
-        circle at var(--x,50%) var(--y,50%),
-        rgba(0,0,0,0.65) 0%,
-        rgba(0,0,0,0.45) 14%,
-        rgba(0,0,0,0.25) 28%,
-        transparent 42%
-      );
-
-    opacity: 0;
-    transform: scale(1);
-    transition:
-      opacity 0.25s ease,
-      transform 0.45s cubic-bezier(.18,.9,.22,1);
-  }
-
-  /* =========================
-     SURROUNDING STRETCH FIELD
-     ========================= */
-  .pull {
-    position: absolute;
-    inset: -55%;
-    border-radius: inherit;
-    pointer-events: none;
-
-    background:
-      radial-gradient(
-        circle at var(--x,50%) var(--y,50%),
-        rgba(0,0,0,0.22) 0%,
-        rgba(0,0,0,0.16) 20%,
-        rgba(0,0,0,0.08) 36%,
-        transparent 60%
-      );
-
-    opacity: 0;
-    transform: scale(1);
-    transition:
-      opacity 0.4s ease,
-      transform 0.6s cubic-bezier(.12,.85,.18,1);
-  }
-
-  /* =========================
-     PRESS (LOCAL ONLY)
-     ========================= */
-  .liquid-btn.touching .dent {
-    opacity: 1;
-    transform: scale(0.82);
-  }
-
-  .liquid-btn.touching .pull {
-    opacity: 1;
-    transform: scale(0.94);
-  }
-
-  /* =========================
-     VISCOUS RECOVERY
-     ========================= */
-  .liquid-btn.settling .dent {
-    opacity: 0.6;
-    transform: scale(0.92);
-  }
-
-  .liquid-btn.settling .pull {
-    opacity: 0.6;
-    transform: scale(0.97);
-  }
 </style>
 </head>
 
 <body>
 
+<!-- SVG FILTER (REAL JELLY PHYSICS) -->
+<svg width="0" height="0">
+  <filter id="jelly">
+    <feTurbulence
+      type="turbulence"
+      baseFrequency="0.015"
+      numOctaves="2"
+      seed="2"
+      result="noise"
+    />
+    <feDisplacementMap
+      in="SourceGraphic"
+      in2="noise"
+      scale="var(--press)"
+      xChannelSelector="R"
+      yChannelSelector="G"
+    />
+  </filter>
+</svg>
+
 <button class="liquid-btn" id="btn">
   <div class="surface"></div>
-  <div class="pull"></div>
-  <div class="dent"></div>
   <span>CLICK ME</span>
 </button>
 
 <script>
   const btn = document.getElementById("btn");
 
-  function updatePosition(e) {
-    const rect = btn.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+  function update(e) {
+    const r = btn.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
     btn.style.setProperty("--x", x + "%");
     btn.style.setProperty("--y", y + "%");
   }
 
   btn.addEventListener("pointerdown", e => {
     btn.setPointerCapture(e.pointerId);
-    updatePosition(e);
-    btn.classList.add("touching");
+    update(e);
+    btn.style.setProperty("--press", 38);
   });
 
   btn.addEventListener("pointermove", e => {
-    if (btn.classList.contains("touching")) {
-      updatePosition(e);
-    }
+    update(e);
   });
 
   function release(e) {
-    btn.classList.remove("touching");
-    btn.classList.add("settling");
-
-    setTimeout(() => {
-      btn.classList.remove("settling");
-    }, 200);
-
+    btn.style.setProperty("--press", 0);
     try { btn.releasePointerCapture(e.pointerId); } catch {}
   }
 
