@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – Area Deformation</title>
+<title>Liquid Button – True Surface Deformation</title>
 
 <style>
   html, body {
@@ -13,7 +13,6 @@
     align-items: center;
     justify-content: center;
     font-family: system-ui;
-    overscroll-behavior: none;
   }
 
   button {
@@ -28,27 +27,37 @@
     width: 840px;
     height: 320px;
     border-radius: 160px;
+    cursor: pointer;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  /* =========================
+     MOVING LIQUID SURFACE
+     ========================= */
+  .surface {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+
     background: rgba(170, 200, 240, 0.24);
     backdrop-filter: blur(18px);
 
-    /* dense, non-glowing body */
     box-shadow:
       inset 0 26px 56px rgba(255,255,255,0.28),
       inset 0 -22px 46px rgba(0,0,0,0.38),
       0 38px 80px rgba(0,0,0,0.65);
 
-    cursor: pointer;
-    overflow: hidden;
+    transform-origin: var(--x, 50%) var(--y, 50%);
+    transform: translate(0,0) scale(1);
 
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
+    transition:
+      transform 0.55s cubic-bezier(.18,.9,.22,1);
   }
 
   .liquid-btn span {
     position: relative;
-    z-index: 4;
+    z-index: 5;
     color: white;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -57,103 +66,90 @@
   }
 
   /* =========================
-     CENTER CRATER (DEPTH)
+     DEPTH + PULL (SUPPORTING)
      ========================= */
-  .liquid-btn::before {
+  .liquid-btn::before,
+  .liquid-btn::after {
     content: "";
     position: absolute;
-    inset: -35%;
+    inset: -40%;
     border-radius: inherit;
     pointer-events: none;
+  }
 
+  /* crater */
+  .liquid-btn::before {
     background:
-      /* subtle rim */
-      radial-gradient(
-        circle at var(--x, 50%) var(--y, 50%),
-        transparent 21%,
-        rgba(255,255,255,0.16) 23%,
-        rgba(255,255,255,0.08) 25%,
-        transparent 27%
-      ),
-
-      /* depth well */
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
         rgba(0,0,0,0.65) 0%,
-        rgba(0,0,0,0.45) 14%,
-        rgba(0,0,0,0.25) 26%,
-        transparent 40%
+        rgba(0,0,0,0.4) 16%,
+        rgba(0,0,0,0.18) 30%,
+        transparent 45%
       );
-
     opacity: 0;
     transform: scale(1);
     transition:
       opacity 0.25s ease,
-      transform 0.6s cubic-bezier(.18,.9,.22,1);
+      transform 0.5s cubic-bezier(.18,.9,.22,1);
   }
 
-  /* =========================
-     LIQUID AREA PULL
-     ========================= */
+  /* area pull */
   .liquid-btn::after {
-    content: "";
-    position: absolute;
-    inset: -55%;
-    border-radius: inherit;
-    pointer-events: none;
-
     background:
       radial-gradient(
         circle at var(--x, 50%) var(--y, 50%),
         rgba(0,0,0,0.22) 0%,
-        rgba(0,0,0,0.18) 18%,
-        rgba(0,0,0,0.10) 34%,
-        transparent 60%
+        rgba(0,0,0,0.16) 20%,
+        rgba(0,0,0,0.08) 38%,
+        transparent 62%
       );
-
     opacity: 0;
     transform: scale(1);
     transition:
       opacity 0.45s ease,
-      transform 0.7s cubic-bezier(.12,.85,.18,1);
+      transform 0.65s cubic-bezier(.12,.85,.18,1);
   }
 
   /* =========================
-     PRESS STATE
+     PRESS = REAL DEFORMATION
      ========================= */
+  .liquid-btn.touching .surface {
+    transform:
+      translate(
+        calc((50% - var(--x,50%)) * 0.02),
+        calc((50% - var(--y,50%)) * 0.02)
+      )
+      scale(0.94);
+  }
+
   .liquid-btn.touching::before {
-    opacity: 0.85;
+    opacity: 1;
     transform: scale(0.8);
-    transition:
-      opacity 0.12s ease,
-      transform 0.18s cubic-bezier(.3,0,.2,1);
   }
 
   .liquid-btn.touching::after {
     opacity: 1;
     transform: scale(0.94);
-    transition:
-      opacity 0.12s ease,
-      transform 0.22s cubic-bezier(.25,0,.2,1);
   }
 
   /* =========================
      VISCOUS RECOVERY
      ========================= */
+  .liquid-btn.settling .surface {
+    transform: scale(0.97);
+    transition:
+      transform 0.6s cubic-bezier(.18,.9,.22,1);
+  }
+
   .liquid-btn.settling::before {
     opacity: 0.55;
     transform: scale(0.92);
-    transition:
-      opacity 0.35s ease-out,
-      transform 0.45s cubic-bezier(.18,.9,.22,1);
   }
 
   .liquid-btn.settling::after {
     opacity: 0.6;
     transform: scale(0.97);
-    transition:
-      opacity 0.45s ease-out,
-      transform 0.55s cubic-bezier(.18,.9,.22,1);
   }
 </style>
 </head>
@@ -161,6 +157,7 @@
 <body>
 
 <button class="liquid-btn" id="btn">
+  <div class="surface"></div>
   <span>CLICK ME</span>
 </button>
 
@@ -193,7 +190,7 @@
 
     setTimeout(() => {
       btn.classList.remove("settling");
-    }, 180);
+    }, 200);
 
     try { btn.releasePointerCapture(e.pointerId); } catch {}
   }
