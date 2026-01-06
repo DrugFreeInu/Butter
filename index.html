@@ -2,47 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Jelly Push Button (Canvas)</title>
+<title>Jelly Button</title>
 
 <style>
-  html, body {
+  body {
     margin: 0;
-    height: 100%;
+    height: 100vh;
     background: #0e0e11;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  .btn {
-    position: relative;
-    width: 840px;
-    height: 320px;
-    border-radius: 160px;
-    overflow: hidden;
-    background: rgba(170,200,240,0.22);
-    box-shadow:
-      inset 0 24px 50px rgba(255,255,255,0.25),
-      inset 0 -20px 40px rgba(0,0,0,0.35),
-      0 40px 80px rgba(0,0,0,0.6);
+  svg {
+    overflow: visible;
     cursor: pointer;
   }
 
-  canvas {
-    position: absolute;
-    inset: 0;
-  }
-
-  .label {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
+  text {
+    font-family: system-ui;
     font-size: 44px;
     letter-spacing: 0.16em;
-    font-family: system-ui;
+    fill: white;
     pointer-events: none;
   }
 </style>
@@ -50,97 +31,64 @@
 
 <body>
 
-<div class="btn" id="btn">
-  <canvas id="c"></canvas>
-  <div class="label">CLICK ME</div>
-</div>
+<svg id="svg" width="840" height="320" viewBox="0 0 840 320">
+  <path id="btn"
+    fill="rgba(170,200,240,0.25)"
+    d="
+      M160 0
+      H680
+      Q840 0 840 160
+      Q840 320 680 320
+      H160
+      Q0 320 0 160
+      Q0 0 160 0
+      Z
+    "
+  />
+  <text x="420" y="180" text-anchor="middle">CLICK ME</text>
+</svg>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
 const btn = document.getElementById("btn");
+const svg = document.getElementById("svg");
 
-let w, h;
-function resize() {
-  w = canvas.width = btn.clientWidth;
-  h = canvas.height = btn.clientHeight;
+function dent(x, y) {
+  btn.setAttribute("d", `
+    M160 0
+    H680
+    Q840 0 840 160
+    Q840 320 680 320
+    H${x + 80}
+    Q${x} ${y + 40} ${x - 80} 320
+    H160
+    Q0 320 0 160
+    Q0 0 160 0
+    Z
+  `);
 }
-resize();
-window.addEventListener("resize", resize);
 
-// height field
-const field = [];
-const res = 120;
-for (let i = 0; i < res * res; i++) field[i] = 0;
+function reset() {
+  btn.setAttribute("d", `
+    M160 0
+    H680
+    Q840 0 840 160
+    Q840 320 680 320
+    H160
+    Q0 320 0 160
+    Q0 0 160 0
+    Z
+  `);
+}
 
-let targetX = 0.5;
-let targetY = 0.5;
-let pressing = false;
-
-btn.addEventListener("pointerdown", e => {
-  const r = btn.getBoundingClientRect();
-  targetX = (e.clientX - r.left) / r.width;
-  targetY = (e.clientY - r.top) / r.height;
-  pressing = true;
+svg.addEventListener("pointerdown", e => {
+  const r = svg.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
+  dent(x, y);
 });
 
-btn.addEventListener("pointerup", () => pressing = false);
-btn.addEventListener("pointerleave", () => pressing = false);
-
-function step() {
-  // update height field
-  for (let y = 0; y < res; y++) {
-    for (let x = 0; x < res; x++) {
-      const i = y * res + x;
-      const dx = x / res - targetX;
-      const dy = y / res - targetY;
-      const d = Math.sqrt(dx*dx + dy*dy);
-      const push = pressing ? Math.exp(-d * 18) * -18 : 0;
-      field[i] += (push - field[i]) * 0.15;
-    }
-  }
-
-  // draw
-  ctx.clearRect(0,0,w,h);
-  const img = ctx.createImageData(w, h);
-  const light = {x: -0.4, y: -0.6, z: 1};
-
-  for (let y = 1; y < h-1; y++) {
-    for (let x = 1; x < w-1; x++) {
-      const fx = Math.floor(x / w * res);
-      const fy = Math.floor(y / h * res);
-      const i = fy * res + fx;
-
-      const hL = field[i - 1] || 0;
-      const hR = field[i + 1] || 0;
-      const hU = field[i - res] || 0;
-      const hD = field[i + res] || 0;
-
-      const nx = hL - hR;
-      const ny = hU - hD;
-      const nz = 1;
-
-      const len = Math.sqrt(nx*nx + ny*ny + nz*nz);
-      const dot =
-        (nx/len)*light.x +
-        (ny/len)*light.y +
-        (nz/len)*light.z;
-
-      const shade = Math.max(0.2, dot);
-      const idx = (y*w + x)*4;
-
-      img.data[idx]   = 255 * shade;
-      img.data[idx+1] = 255 * shade;
-      img.data[idx+2] = 255 * shade;
-      img.data[idx+3] = 35;
-    }
-  }
-
-  ctx.putImageData(img,0,0);
-  requestAnimationFrame(step);
-}
-
-step();
+svg.addEventListener("pointerup", reset);
+svg.addEventListener("pointerleave", reset);
 </script>
 
 </body>
