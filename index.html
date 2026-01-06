@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Liquid Button – True Surface Deformation</title>
+<title>Liquid Button – Local Deformation Only</title>
 
 <style>
   html, body {
@@ -27,13 +27,13 @@
     width: 840px;
     height: 320px;
     border-radius: 160px;
-    cursor: pointer;
     overflow: hidden;
+    cursor: pointer;
     touch-action: none;
   }
 
   /* =========================
-     MOVING LIQUID SURFACE
+     STATIC BASE SURFACE
      ========================= */
   .surface {
     position: absolute;
@@ -47,12 +47,6 @@
       inset 0 26px 56px rgba(255,255,255,0.28),
       inset 0 -22px 46px rgba(0,0,0,0.38),
       0 38px 80px rgba(0,0,0,0.65);
-
-    transform-origin: var(--x, 50%) var(--y, 50%);
-    transform: translate(0,0) scale(1);
-
-    transition:
-      transform 0.55s cubic-bezier(.18,.9,.22,1);
   }
 
   .liquid-btn span {
@@ -66,69 +60,73 @@
   }
 
   /* =========================
-     DEPTH + PULL (SUPPORTING)
+     LOCAL DENT LAYER
      ========================= */
-  .liquid-btn::before,
-  .liquid-btn::after {
-    content: "";
+  .dent {
     position: absolute;
     inset: -40%;
     border-radius: inherit;
     pointer-events: none;
-  }
 
-  /* crater */
-  .liquid-btn::before {
     background:
+      /* rim */
       radial-gradient(
-        circle at var(--x, 50%) var(--y, 50%),
+        circle at var(--x,50%) var(--y,50%),
+        transparent 20%,
+        rgba(255,255,255,0.16) 22%,
+        rgba(255,255,255,0.08) 24%,
+        transparent 26%
+      ),
+      /* depth */
+      radial-gradient(
+        circle at var(--x,50%) var(--y,50%),
         rgba(0,0,0,0.65) 0%,
-        rgba(0,0,0,0.4) 16%,
-        rgba(0,0,0,0.18) 30%,
-        transparent 45%
+        rgba(0,0,0,0.45) 14%,
+        rgba(0,0,0,0.25) 28%,
+        transparent 42%
       );
+
     opacity: 0;
     transform: scale(1);
     transition:
       opacity 0.25s ease,
-      transform 0.5s cubic-bezier(.18,.9,.22,1);
-  }
-
-  /* area pull */
-  .liquid-btn::after {
-    background:
-      radial-gradient(
-        circle at var(--x, 50%) var(--y, 50%),
-        rgba(0,0,0,0.22) 0%,
-        rgba(0,0,0,0.16) 20%,
-        rgba(0,0,0,0.08) 38%,
-        transparent 62%
-      );
-    opacity: 0;
-    transform: scale(1);
-    transition:
-      opacity 0.45s ease,
-      transform 0.65s cubic-bezier(.12,.85,.18,1);
+      transform 0.45s cubic-bezier(.18,.9,.22,1);
   }
 
   /* =========================
-     PRESS = REAL DEFORMATION
+     SURROUNDING STRETCH FIELD
      ========================= */
-  .liquid-btn.touching .surface {
-    transform:
-      translate(
-        calc((50% - var(--x,50%)) * 0.02),
-        calc((50% - var(--y,50%)) * 0.02)
-      )
-      scale(0.94);
+  .pull {
+    position: absolute;
+    inset: -55%;
+    border-radius: inherit;
+    pointer-events: none;
+
+    background:
+      radial-gradient(
+        circle at var(--x,50%) var(--y,50%),
+        rgba(0,0,0,0.22) 0%,
+        rgba(0,0,0,0.16) 20%,
+        rgba(0,0,0,0.08) 36%,
+        transparent 60%
+      );
+
+    opacity: 0;
+    transform: scale(1);
+    transition:
+      opacity 0.4s ease,
+      transform 0.6s cubic-bezier(.12,.85,.18,1);
   }
 
-  .liquid-btn.touching::before {
+  /* =========================
+     PRESS (LOCAL ONLY)
+     ========================= */
+  .liquid-btn.touching .dent {
     opacity: 1;
-    transform: scale(0.8);
+    transform: scale(0.82);
   }
 
-  .liquid-btn.touching::after {
+  .liquid-btn.touching .pull {
     opacity: 1;
     transform: scale(0.94);
   }
@@ -136,18 +134,12 @@
   /* =========================
      VISCOUS RECOVERY
      ========================= */
-  .liquid-btn.settling .surface {
-    transform: scale(0.97);
-    transition:
-      transform 0.6s cubic-bezier(.18,.9,.22,1);
-  }
-
-  .liquid-btn.settling::before {
-    opacity: 0.55;
+  .liquid-btn.settling .dent {
+    opacity: 0.6;
     transform: scale(0.92);
   }
 
-  .liquid-btn.settling::after {
+  .liquid-btn.settling .pull {
     opacity: 0.6;
     transform: scale(0.97);
   }
@@ -158,6 +150,8 @@
 
 <button class="liquid-btn" id="btn">
   <div class="surface"></div>
+  <div class="pull"></div>
+  <div class="dent"></div>
   <span>CLICK ME</span>
 </button>
 
