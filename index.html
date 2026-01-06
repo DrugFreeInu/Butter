@@ -1,94 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Jelly Button</title>
+<meta charset="UTF-8">
+<title>Squishy Jelly Button</title>
 
 <style>
   body {
     margin: 0;
     height: 100vh;
-    background: #0e0e11;
+    background: linear-gradient(135deg, #667eea, #764ba2);
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  svg {
-    overflow: visible;
-    cursor: pointer;
-  }
-
-  text {
     font-family: system-ui;
-    font-size: 44px;
-    letter-spacing: 0.16em;
-    fill: white;
-    pointer-events: none;
+    overflow: hidden;
+  }
+
+  #buttonContainer {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  canvas {
+    display: block;
+    filter: drop-shadow(0 20px 50px rgba(0,0,0,0.4));
   }
 </style>
 </head>
 
 <body>
 
-<svg id="svg" width="840" height="320" viewBox="0 0 840 320">
-  <path id="btn"
-    fill="rgba(170,200,240,0.25)"
-    d="
-      M160 0
-      H680
-      Q840 0 840 160
-      Q840 320 680 320
-      H160
-      Q0 320 0 160
-      Q0 0 160 0
-      Z
-    "
-  />
-  <text x="420" y="180" text-anchor="middle">CLICK ME</text>
-</svg>
+<div id="buttonContainer">
+  <canvas id="canvas" width="400" height="200"></canvas>
+</div>
 
 <script>
-const btn = document.getElementById("btn");
-const svg = document.getElementById("svg");
+/* =========================
+   BASIC SETUP
+   ========================= */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const container = document.getElementById("buttonContainer");
 
-function dent(x, y) {
-  btn.setAttribute("d", `
-    M160 0
-    H680
-    Q840 0 840 160
-    Q840 320 680 320
-    H${x + 80}
-    Q${x} ${y + 40} ${x - 80} 320
-    H160
-    Q0 320 0 160
-    Q0 0 160 0
-    Z
-  `);
+const W = canvas.width;
+const H = canvas.height;
+
+/* =========================
+   PRESS OBJECT (JELLY FORCE)
+   ========================= */
+class Press {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.t = 0;
+    this.life = 900;
+  }
+
+  update(dt) {
+    this.t += dt;
+    return this.t < this.life;
+  }
+
+  strength() {
+    const p = Math.min(this.t / this.life, 1);
+    // slow, heavy jelly decay
+    return 1 - p * p;
+  }
 }
 
-function reset() {
-  btn.setAttribute("d", `
-    M160 0
-    H680
-    Q840 0 840 160
-    Q840 320 680 320
-    H160
-    Q0 320 0 160
-    Q0 0 160 0
-    Z
-  `);
+let presses = [];
+
+/* =========================
+   DEFORMATION FIELD
+   ========================= */
+function deformPoint(x, y) {
+  let dx = 0, dy = 0;
+
+  for (const p of presses) {
+    const vx = x - p.x;
+    const vy = y - p.y;
+    const d = Math.hypot(vx, vy);
+    const R = 110;
+
+    if (d > R || d === 0) continue;
+
+    const falloff = 1 - d / R;
+    const force = p.strength();
+
+    // inward sink (center heavy)
+    const inward = -force * falloff * 38;
+
+    // surrounding stretch
+    const stretch = force * Math.pow(falloff, 2) * 22;
+
+    const angle = Math.atan2(vy, vx);
+    const mag = inward + stretch;
+
+    dx += Math.cos(angle) * mag;
+    dy += Math.sin(angle) * mag;
+  }
+
+  return { x: x + dx, y: y + dy };
 }
 
-svg.addEventListener("pointerdown", e => {
-  const r = svg.getBoundingClientRect();
-  const x = e.clientX - r.left;
-  const y = e.clientY - r.top;
-  dent(x, y);
-});
+/* =========================
+   DRAW BUTTON
+   ========================= */
+function draw() {
+  ctx.clearRect(0, 0, W, H);
 
-svg.addEventListener("pointerup", reset);
-svg.addEventListener("pointerleave", reset);
+  const cx = W / 2;
+  const cy = H / 2;
+  const bw = 300;
+  const bh = 120;
+  const r = 60;
+
+  const pts = [];
+  const N = 90;
+
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+
+    let x = cx + cos * (bw / 2 - r);
+    let y = cy + sin * (bh / 2 - r);
+
+    x += cos * r;
+    y += sin * r;
+
+    pts.push(deformPoint(x, y));
+  }
+
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, "#ff6b9d");
+  grad.addColorStop(0.5, "#c06bff");
+  grad.addColorStop(1, "#6b9dff");
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+
+  for (let i = 1; i < pts.length; i++) {
+    const p0 = pts[i];
+    const p1 = pts[(i + 1) % pts.length];
+    ctx.quadraticCurveTo(p0.x, p0.y, (p0.x + p1.x) / 2, (p0.y + p1.y) / 2);
+  }
+
+  ctx.closePath();
+  ctx.fill();
+
+  // text
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 34px system-ui";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("PRESS ME", cx, cy);
+}
+
+/* =========================
+   LOOP
+   ========================= */
+let last = performance.now();
+function loop(now) {
+  const dt = now - last;
+  last = now;
+
+  presses = presses.filter(p => p.update(dt));
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* =========================
+   INPUT
+   ========================= */
+function handlePress(e) {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+
+  presses.push(new Press(x, y));
+}
+
+container.addEventListener("mousedown", handlePress);
+container.addEventListener("touchstart", handlePress, { passive: false });
 </script>
 
 </body>
